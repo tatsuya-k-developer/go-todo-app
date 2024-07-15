@@ -15,7 +15,17 @@ func GetAll(ctx *gin.Context) {
 
 // ID取得エンドポイントのハンドラ
 func GetById(ctx *gin.Context) {
+	db := ctx.MustGet("db").(*gorm.DB)
 
+	var todo models.Todo
+	err := db.Find(&todo, ctx.Param("id")).Error
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, gin.H{
+			"message": "not found",
+		})
+	} else {
+		ctx.JSON(http.StatusOK, todo)
+	}
 }
 
 // 新規作成エンドポイントのハンドラ
