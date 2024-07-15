@@ -63,12 +63,49 @@ func CreateNew(ctx *gin.Context) {
 
 // 更新エンドポイントのハンドラ
 func Update(ctx *gin.Context) {
+	db := ctx.MustGet("db").(*gorm.DB)
 
+	var requestBody models.Todo
+	err := ctx.BindJSON(&requestBody)
+
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"message": "不正なリクエストボディです",
+		})
+	} else {
+		var old models.Todo
+
+		err := db.First(&old, ctx.Param("id")).Error
+		if err != nil {
+			ctx.JSON(http.StatusNotFound, gin.H{
+				"message": "not found",
+			})
+		}
+
+		requestBody.Id = old.Id
+
+		db.Save(&requestBody)
+
+		ctx.JSON(http.StatusOK, requestBody)
+	}
 }
 
 // 削除エンドポイントのハンドラ
 func DeleteById(ctx *gin.Context) {
+	db := ctx.MustGet("db").(*gorm.DB)
+	var old models.Todo
+	err := db.First(&old, ctx.Param("id")).Error
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, gin.H{
+			"message": "not found",
+		})
+	}
 
+	if err := db.Delete(&old).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, "internal server error")
+	} else {
+		ctx.Status(http.StatusNoContent)
+	}
 }
 
 func RegisterTodoEndpoints(todoGroup *gin.RouterGroup) {
