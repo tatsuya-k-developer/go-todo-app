@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"main/config"
 	"main/models"
 	"main/routes"
 
@@ -9,7 +10,6 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
-
 
 func DBMiddleware(db *gorm.DB) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
@@ -19,17 +19,21 @@ func DBMiddleware(db *gorm.DB) gin.HandlerFunc {
 }
 
 func main() {
-	dsn := "user=postgres password=password port=5432 sslmode=disable host=127.0.0.1"
+	cfg, err := config.Load("config.yaml")
 
-	db, err := gorm.Open(postgres.Open(dsn))
+	if err != nil {
+		fmt.Println("設定ファイルを読み込めませんでした")
+		return
+	}
+
+	db, err := gorm.Open(postgres.Open(cfg.GetDBDNS()))
 
 	if err != nil {
 		fmt.Println("DBに接続できませんでした")
 		return
 	}
 
-	// Todoのテーブルを自動的に更新する　Migrate＝アップデート
-	// 実開発ではあんまりしないほうがいい＝バージョン管理ができなくなる　Goのマイグレーションツールを使った方が良さそう
+	// 自動でDBのマイグレーションを行ってくれる
 	db.AutoMigrate(&models.Todo{})
 
 	router := gin.Default()
@@ -38,5 +42,5 @@ func main() {
 
 	routes.AddRoutes(router)
 
-	router.Run("127.0.0.1:8080")
+	router.Run(cfg.GetSocketAddr())
 }
