@@ -10,7 +10,20 @@ import (
 
 // 全件取得エンドポイントのハンドラ
 func GetAll(ctx *gin.Context) {
+	db := ctx.MustGet("db").(*gorm.DB)
+	var todos []models.Todo
 
+	// Find 全権取得
+	err := db.Find(&todos).Error
+
+	// 取得するときのエラー処理
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"message": "internal server error",
+		})
+	} else {
+		ctx.JSON(http.StatusOK, todos)
+	}
 }
 
 // ID取得エンドポイントのハンドラ
@@ -18,7 +31,7 @@ func GetById(ctx *gin.Context) {
 	db := ctx.MustGet("db").(*gorm.DB)
 
 	var todo models.Todo
-	err := db.Find(&todo, ctx.Param("id")).Error
+	err := db.First(&todo, ctx.Param("id")).Error
 	if err != nil {
 		ctx.JSON(http.StatusNotFound, gin.H{
 			"message": "not found",
